@@ -54,23 +54,31 @@ En este script debes implementar el cálculo geométrico de la distancia.
 * **Nota**: Recuerda transformar los grados a radianes con `np.radians()` antes de aplicar funciones trigonométricas.
 
 ### 2.  `src/pipeline.py`
-Este script contendrá las tres capas de la arquitectura Medallion utilizando tareas (`@task`) y flujos (`@flow`) de **Prefect** conectados a **DuckDB**:
+Este script contendrá las tres capas de la arquitectura Medallion utilizando tareas (`@task`) y flujos (`@flow`) de **Prefect** conectando **DuckDB** para persistencia y **Pandas** para las transformaciones:
 * **Tarea `ingest_bronze`**:
   - Asegurar la creación del directorio para la base de datos `data/logistics_warehouse.db`.
   - Ingestar los archivos CSV de la ruta indicada (`data_dir`).
-  - **Manejo de Ingesta**: Si `is_initial=True` (Fase 1), recrear todas las tablas cargándolas directamente. Si `is_initial=False` (Fase 2), realizar una **ingesta incremental** insertando solo las órdenes y detalles cuyos IDs no existan previamente en la base de datos (evitando duplicados).
+  - **Manejo de Ingesta**: Si `is_initial=True` (Fase 1), recrear todas las tablas cargándolas directamente. Si `is_initial=False` (Fase 2), realizar una **ingesta incremental** en SQL insertando solo las órdenes y detalles cuyos IDs no existan previamente en la base de datos (evitando duplicados).
 * **Tarea `build_silver`**:
-  - Unir la tabla de órdenes con la de clientes.
-  - Convertir todos los campos de fecha de texto a tipo `TIMESTAMP` (usando `TRY_CAST` en SQL).
-  - Calcular la duración real y estimada de entrega en días flotantes (restando timestamps y transformando mediante `epoch` a segundos y dividiendo entre 86400).
+  - Cargar las tablas crudas `bronze_orders`, `bronze_customers` y `bronze_geolocation` desde DuckDB hacia DataFrames de Pandas (usando `.to_df()`).
+  - Unir la tabla de órdenes con la de clientes mediante `customer_id` usando Pandas (`.merge()`).
+  - Convertir todos los campos de fecha de texto a tipo datetime usando `pd.to_datetime()`.
+  - Calcular la duración real y estimada de entrega en días flotantes (restando timestamps, extrayendo segundos totales con `.dt.total_seconds()` y dividiendo entre 86400.0).
+  - Agrupar la geolocalización por `geolocation_zip_code_prefix` con el promedio de latitud/longitud.
+  - Guardar los DataFrames procesados de vuelta en DuckDB (reemplazando las tablas `silver_orders` y `silver_geolocation_agg`).
 * **Tarea `build_gold`**:
-  - Reconstruir la tabla agregada `gold_orders` a nivel de pedido (`order_id`).
-  - Definir la variable objetivo: `is_delayed` (1 si el pedido llegó tarde, 0 si llegó a tiempo, y NULL si está en tránsito).
-  - Calcular features: peso acumulado del paquete, número total de artículos en la orden, hora y día de la semana de la compra, y días estimados de entrega.
-  - Calcular en la consulta de SQL la distancia máxima de envío aplicando de forma nativa la **fórmula de Haversine en SQL**.
-  - **Crítico para el Live Demo**: Agregar la columna `processed_at` con `CURRENT_TIMESTAMP` para auditar cuándo se procesaron los datos.
+  - Cargar las tablas procesadas de la capa Silver y Bronze en DataFrames de Pandas.
+  - Convertir las columnas de códigos postales (`customer_zip_code_prefix`, `seller_zip_code_prefix` y `geolocation_zip_code_prefix`) a tipo `int64` para evitar conflictos de tipo de datos al fusionar.
+  - Definir la variable objetivo: `is_delayed` (1 si el pedido llegó tarde, 0 si llegó a tiempo, y NaN si está en tránsito) usando `np.where`.
+  - Cruzar las coordenadas de clientes y vendedores correspondientes.
+  - Calcular la distancia de envío en kilómetros llamando a la función **`haversine_distance` importada desde `src.utils`**. Rellenar nulos con una mediana de 300.0 km.
+  - Agrupar características a nivel de pedido (`order_id`): suma de pesos, conteo de ítems y distancia máxima de envío.
+  - Extraer variables temporales: día de la semana (0-6) y hora de la compra.
+  - **Crítico para el Live Demo**: Registrar la columna `processed_at` con el timestamp de este momento (`pd.Timestamp.now()`) para auditar cuándo se procesaron los datos.
+  - Guardar el DataFrame final de vuelta en la tabla `gold_orders` de DuckDB.
 * **Flujo `logistics_etl_pipeline`**:
   - Orquestar la ejecución secuencial de las tres tareas anteriores.
+
 
 ### 3.  `src/train.py`
 En este script implementarás el ciclo de entrenamiento y serialización del modelo:
