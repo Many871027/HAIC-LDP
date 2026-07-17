@@ -80,11 +80,11 @@ En este script implementarás el ciclo de entrenamiento y serialización del mod
 * **Algoritmo**: Instanciar y entrenar un `RandomForestClassifier`.
 * **Desbalance de Clases**: Debido a que solo ~9% de los pedidos llegan tarde, es obligatorio inicializar el modelo con **`class_weight="balanced"`** para asegurar que el modelo aprenda a predecir retrasos en lugar de sesgarse a decir que todo llegará a tiempo.
 * **Evaluación**: Imprimir métricas de precisión, recall, F1-score y la puntuación de ROC-AUC.
-* **Serialización**: Guardar en `models/delivery_model.pkl` un diccionario con el clasificador entrenado y la lista de nombres de features empleadas.
+* **Serialización**: Guardar en `models/delivery_model.joblib` un diccionario con el clasificador entrenado y la lista de nombres de features empleadas.
 
 ### 4.  `src/app.py`
 En este script desarrollarás la API de inferencia en tiempo real usando **FastAPI**:
-* **Lifespan Startup**: Cargar el modelo guardado en `models/delivery_model.pkl` en las variables globales al iniciar la aplicación.
+* **Lifespan Startup**: Cargar el modelo guardado en `models/delivery_model.joblib` en las variables globales al iniciar la aplicación.
 * **Ruta `GET /`**: Retornar el estado del servicio.
 * **Ruta `POST /predict/batch`**:
   - Aceptar un listado opcional de `order_ids`.
