@@ -1,6 +1,6 @@
 import os
 import duckdb
-import pickle
+import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report, roc_auc_score
 # Rutas de archivos del modelo
 DB_PATH = r"D:\HAIC-LDP\data\logistics_warehouse.db"
 MODEL_DIR = r"D:\HAIC-LDP\models"
-MODEL_PATH = os.path.join(MODEL_DIR, "delivery_model.pkl")
+MODEL_PATH = os.path.join(MODEL_DIR, "delivery_model.joblib")
 
 def train_model():
     """
@@ -41,9 +41,9 @@ def train_model():
     7. Guardar el modelo:
        - Crear el directorio `models` si no existe.
        - Empaquetar y serializar en un diccionario o tupla el modelo clasificador entrenado junto con la lista 
-         de nombres de columnas de features en un archivo pickle (`delivery_model.pkl`).
+         de nombres de columnas de features en un archivo de joblib (`delivery_model.joblib`) aplicando compresión.
     """
-    # Conexión, carga de datos, entrenamiento, métricas y exportación del modelo en .pkl aquí:
+    # Conexión, carga de datos, entrenamiento, métricas y exportación del modelo en .joblib aquí:
     pass
 
 if __name__ == "__main__":

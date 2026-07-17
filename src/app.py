@@ -1,5 +1,5 @@
 import os
-import pickle
+import joblib
 import duckdb
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 # Rutas de base de datos y modelo
 DB_PATH = r"D:\HAIC-LDP\data\logistics_warehouse.db"
-MODEL_PATH = r"D:\HAIC-LDP\models\delivery_model.pkl"
+MODEL_PATH = r"D:\HAIC-LDP\models\delivery_model.joblib"
 
 # Variables globales para almacenar el modelo y metadatos en memoria
 model = None
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     
     Instrucciones:
     1. En el arranque de la API (startup), verificar si el archivo del modelo `MODEL_PATH` existe.
-    2. Cargar el archivo serializado `.pkl` usando `pickle.load()`.
+    2. Cargar el archivo serializado `.joblib` usando `joblib.load()`.
     3. Poblar las variables globales `model` y `features` con el modelo y el orden de columnas correspondientes.
     4. Ceder el control a la aplicación (yield) para procesar solicitudes.
     """
