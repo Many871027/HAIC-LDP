@@ -1,6 +1,6 @@
 # HAIC Logistics: Late Delivery Prediction (LDP) 
 
-![Logo de Hidalgo AI Community](file:///D:/HAIC-LDP/HAIC%20LOGO.JPG)
+![Logo de Hidalgo AI Community](HAIC%20LOGO.JPG)
 
 ¡Hola, comunidad de **Hidalgo AI Community (HAIC)**! 
 
